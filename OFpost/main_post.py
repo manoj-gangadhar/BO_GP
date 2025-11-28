@@ -101,7 +101,7 @@ def load_grid(Nx, Ny, Nz, path2case):
     ndata = Nx*Ny*Nz
     
     # cell centres
-    b = 'sed \'1,22d\' %s/0/C | '  % path2case
+    b = 'sed \'1,21d\' %s/0/C | '  % path2case
     c = 'head -%s | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./Cdata' % (ndata)
     a = b+c
     try:
@@ -120,7 +120,7 @@ def load_grid(Nx, Ny, Nz, path2case):
     # Nx*Ny*Nz
     
     # points
-    b='sed \'1,20d\' %s/constant/polyMesh/points | '  % path2case
+    b='sed \'1,19d\' %s/constant/polyMesh/points | '  % path2case
     c='head -%s | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./pointsdata'\
         % (int((Nx+1)*(Ny+1)*(Nz+1)))
     a= b+c
@@ -170,7 +170,7 @@ def load_data(Nx, Ny, Nz, t, path2case):
     tail = np.array(["data%d" % t ]*nList)
     tmp1 = np.core.defchararray.add(datalist,tail)
     for i in range(nList):
-        b = 'sed \'1,22d\' %s/%d/%s | ' % (path2case,t,datalist[i]) # delete 1-22 rows
+        b = 'sed \'1,21d\' %s/%d/%s | ' % (path2case,t,datalist[i]) # delete 1-22 rows
         c = 'head -%d > ./%s' % (ndata, tmp1[i])
         a = b+c
         try:
@@ -200,7 +200,7 @@ def load_data(Nx, Ny, Nz, t, path2case):
     datalist = 'wallShearStress'
     
     tmp1 = '%sdata%d' % (datalist,t)
-    b = 'sed \'1,29d\' %s/%d/%s | ' % (path2case,t,datalist) # delete 1-29 rows
+    b = 'sed \'1,28d\' %s/%d/%s | ' % (path2case,t,datalist) # delete 1-29 rows
     c = 'head -%d | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./%s' % (Nx, tmp1)
     a = b+c
     try:
@@ -212,11 +212,14 @@ def load_data(Nx, Ny, Nz, t, path2case):
         logger.error("coundn't load %s/%d/%s" % (path2case,t,datalist))
         sys.exit(1)
     
-    tau_w = np.abs(wallShearStress[:,0]) # T_12
+    #tau_w = np.abs(wallShearStress[:,0]) # T_12
     
-    return Ux, Uy, p, tau_w
+    # new (read vector shear at the lower wall; first two components are x,y)
+    tau_vec = wallShearStress[:, :2]   # shape (Nx, 2)
+    
+    return Ux, Uy, p, tau_vec
 
-def bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc, U, p, tau_w):
+def bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc, x, y, U, p, tau_vec):
     """
     Returns
     -------
@@ -230,7 +233,7 @@ def bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc, U, p, tau_w):
     U_max = np.zeros(Nx)
     
     for i in range(Nx):
-        U_max[i] = np.max(U[np.where(yc[:,i] < yc[-1,i]/2),i]/U_infty)
+        U_max[i] = np.max(U[np.where(yc[:,i] < (yc[0,i]+yc[-1,i])/2),i]/U_infty)
         U_tmp = U[:,i]/U_max[i]
         thre = 0.99 # initial threshhold, can be modified
         counter = 0 # avoid infinity loop
@@ -276,22 +279,96 @@ def bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc, U, p, tau_w):
     # Re_deltaStar = U_infty*deltaStar/nu
     Re_theta = U_infty*theta/nu
     # H12 = deltaStar/theta
+
+    # bottom boundary nodes (Nx+1 points → Nx faces)
+    x_b = x            # shape (Nx+1,)
+    y_b = y[0, :]            # shape (Nx+1,)
+    dx  = x_b[1:] - x_b[:-1] # shape (Nx,)
+    dy  = y_b[1:] - y_b[:-1] # shape (Nx,)
+    tmag = np.sqrt(dx*dx + dy*dy) #+ 1e-16
+    tx   = dx / tmag         # unit tangent components
+    ty   = dy / tmag
+
+    # tau_vec: shape (Nx,2) with columns [tau_x, tau_y]
+    tau_tan = np.abs(tau_vec[:,0] * tx + tau_vec[:,1] * ty)  # shape (Nx,)
     
     beta = np.zeros(Nx-1)
     dpdx = np.diff((p[int(Ny/2-1),:]+p[int(Ny/2),:])/2)/np.diff(xc) # middle of the channel
+
+    # --- dp/dx at midline (your current baseline) ---
+    dpdx_mid = np.diff(0.5*(p[Ny//2 - 1, :] + p[Ny//2, :])) / np.diff(xc)   # (Nx-1,)
+    x_mid    = 0.5*(xc[1:] + xc[:-1])                                        # (Nx-1,)
+
+    # --- dp/dx using the lower-wall cell row ("wall-dx") ---
+    pb        = p[0, :]                           # (Nx,), pressure at first cell row near wall
+    dpdx_wall = np.diff(pb) / np.diff(xc)         # (Nx-1,), same x-centers denominator as midline
+
+    # --- dp/ds along the actual curved wall ("wall-s") ---
+    # lower-wall nodal coordinates (Nx+1 nodes -> Nx faces)
+    x_b = x              # (Nx+1,)
+    y_b = y[0, :]        # (Nx+1,)
+
+    # edge arc-lengths (between nodes): Nx values
+    dxb   = np.diff(x_b)                                # (Nx,)
+    dyb   = np.diff(y_b)                                # (Nx,)
+    ds_e  = np.hypot(dxb, dyb)                          # (Nx,)
+
+    # cumulative arc-length at nodes (edges): Nx+1 values
+    s_edge = np.r_[0.0, np.cumsum(ds_e)]               # (Nx+1,)
+
+    # arc-length at *face centers* (between nodes): Nx values
+    s_face = 0.5*(s_edge[1:] + s_edge[:-1])            # (Nx,)
+
+    # distances between consecutive face centers: Nx-1 values (matches diff(pb))
+    eps = np.finfo(float).eps
+    ds_face = np.diff(s_face)
+    ds_face = np.where(ds_face > eps, ds_face, eps)    # guard tiny segments
+
+    # now dp/ds at the wall (between face centers)
+    dpds_wall = np.diff(pb) / ds_face                  # (Nx-1,)
+
+    # (optional) smooth pb slightly before differencing if very noisy near inlet:
+    # def smooth1d(a, w=5): return np.convolve(a, np.ones(w)/w, mode='same')
+    # pb_s      = smooth1d(pb, w=5)
+    # dpdx_wall = np.diff(pb_s) / np.diff(xc)
+    # dpds_wall = np.diff(pb_s) / ds_face
+
+    # approximate cos(theta) at faces (direction cosine of tangent wrt global x)
+    cos_theta_face = tx                           # (Nx,)
+    # average to match dp "between faces" (Nx-1,)
+    cos_theta_seg  = 0.5*(cos_theta_face[1:] + cos_theta_face[:-1])
+
+    # Compare dpds vs dpdx_wall * cos(theta). If flow is mostly x-directed, these are close.
+    num = np.linalg.norm(dpds_wall - dpdx_wall * cos_theta_seg)
+    den = np.linalg.norm(dpds_wall) + 1e-16
+    logger.info(f"[dp] ‖dp/ds − (dp/dx_wall·cosθ)‖ / ‖dp/ds‖ = {num/den:.3e}")
+
+    dp_mode = "wall_dx"         # "midline", "wall_dx", or "wall_s"
+
+    if dp_mode == "midline":
+        dpdx = dpdx_mid
+    elif dp_mode == "wall_dx":      # At lower wall along x
+        dpdx = dpdx_wall
+    elif dp_mode == "wall_s":       # At lower wall along curved wall
+        dpdx = dpds_wall
+    else:
+        raise ValueError("dp_mode must be one of: midline | wall_dx | wall_s")
+
+
     for i in range(int(Nx-1)):
-        beta[i] = np.mean(deltaStar[i]+deltaStar[i+1])/np.mean(tau_w[i]+tau_w[i+1])*dpdx[i]
+        beta[i] = np.mean(deltaStar[i]+deltaStar[i+1])/np.mean(tau_tan[i]+tau_tan[i+1])*dpdx[i]
     
     # msc.
     # Cf = tau_w/(1/2*U_infty**2) # incompressible
     # Re_tau = u_tau*delta99/nu
     
-    return Re_theta, beta, deltaStar, dpdx, delta99
+    return Re_theta, beta, deltaStar, dpdx, delta99, tau_tan, \
+       x_mid, dpdx_mid, dpdx_wall, s_face, dpds_wall
 
 def beta_target(x):
     # 1 if you want beta=1 constant
     n=len(x)
-    beta_t=1*np.ones(n) #x/50
+    beta_t=0*np.ones(n) #x/50
     return beta_t
 
 def beta_target_(x):
@@ -467,25 +544,68 @@ def save_Ucontour(x_delta, y_delta, xc_delta, yc_delta, U, delta99_delta, iMain,
     plt.savefig(path2figs + saveFileName + ".pdf", bbox_inches="tight")
     logger.info("save U figure as %s%s.pdf" % (path2figs, saveFileName))
 
+def save_dpgrad_fig(outdir, x_mid, dpdx_mid, dpdx_wall, s_face, dpds_wall,
+                    delta99_in=1.0, fname="dpgrad_compare.pdf"):
+    import matplotlib.pyplot as plt
+
+    # Normalize axes if you like; otherwise plot raw coordinates
+    xn = x_mid / float(delta99_in)
+    sf = s_face / float(delta99_in)
+    # dp/ds is defined between face centers, so plot it at the midpoints of s_face
+    s_mid_for_dp = 0.5*(sf[1:] + sf[:-1])   # (Nx-1,)
+
+    plt.figure(figsize=(8, 3.8))
+    plt.plot(xn, dpdx_mid,  label=r"$\partial p/\partial x$ midline", lw=2)
+    plt.plot(xn, dpdx_wall, label=r"$\partial p/\partial x$ wall row", lw=2, ls="--")
+    plt.plot(s_mid_for_dp, dpds_wall, label=r"$\mathrm{d}p/\mathrm{d}s$ wall arc", lw=2, ls="-.")
+
+    plt.xlabel(r"$x/\delta_{99}^{in}$ (or $s/\delta_{99}^{in}$)")
+    plt.ylabel(r"pressure gradient")
+    plt.grid(alpha=0.25)
+    plt.legend(frameon=True)
+    plt.tight_layout()
+    plt.savefig(f"{outdir}/{fname}")
+    plt.close()
+
+
 def main(in_exc, out_exc, iMain, U_infty, delta99_in, Nx, Ny, Nz, t, q):
     #1. load data
     nu = getNu(D.PATH2OFCASE)
     xc, yc, x, y = load_grid(Nx, Ny, Nz, D.PATH2OFCASE)
-    U, V, p, tau_w = load_data(Nx, Ny, Nz, t, D.PATH2OFCASE)
+    U, V, p, tau_vec = load_data(Nx, Ny, Nz, t, D.PATH2OFCASE)
     
     #2. calc
-    Re_theta, beta, deltaStar, dpdx, delta99 = \
-        bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc, U, p, tau_w)
+    Re_theta, beta, deltaStar, dpdx, delta99, tau_tan, \
+    x_mid, dpdx_mid, dpdx_wall, s_face, dpds_wall = \
+        bl_calc(Nx, Ny, Nz, U_infty, nu, xc, yc,x, y, U, p, tau_vec)
+    
+    # save the comparison plot for this iteration
+    save_dpgrad_fig(D.PATH2FIGS, x_mid, dpdx_mid, dpdx_wall, s_face, dpds_wall,
+                    delta99_in=delta99_in, fname=f"dpgrad_{iMain:02d}.pdf")
+
+    # (optional) save raw arrays for inspection
+    np.save(f"{D.PATH2DATA}/dpdx_mid_{iMain:02d}.npy",  dpdx_mid)
+    np.save(f"{D.PATH2DATA}/dpdx_wall_{iMain:02d}.npy", dpdx_wall)
+    np.save(f"{D.PATH2DATA}/dpds_wall_{iMain:02d}.npy", dpds_wall)
+    np.save(f"{D.PATH2DATA}/tau_tan_{iMain:02d}.npy",   tau_tan)
+    
+    #2.2 wallshearstress sanity check
+    tau_x_abs = np.abs(tau_vec[:, 0])
+    rel_err = np.linalg.norm(tau_tan - tau_x_abs) / (np.linalg.norm(tau_tan) + 1e-16)
+    logger.info(f"[τ-projection check] ||τ_tan - |τ_x||| / ||τ_tan|| = {rel_err:.3e}")
+    np.save(f"{D.PATH2DATA}/tau_debug{ iMain:02d}.npy",
+            np.c_[tau_tan, tau_x_abs])
+            
     
     #3. assess objective R
     obj = calc_obj(x, beta, in_exc, out_exc)
     logger.info("objective = %g" % obj)
     
     #4. save data as .npy
-    save_data(Re_theta, beta, deltaStar, dpdx, tau_w, U, delta99, iMain)
+    save_data(Re_theta, beta, deltaStar, dpdx, tau_tan, U, delta99, iMain)
 
     #6. save beta & U contour
-    save_beta_fig(iMain, x, beta, delta99_in, in_exc, out_exc, obj)
+    save_beta_fig(iMain, x, beta, delta99_in, in_exc, out_exc, obj, -0.2, 0.2)
     save_Ucontour(x/delta99_in, y/delta99_in, xc/delta99_in, yc/delta99_in, U, delta99/delta99_in, \
                   iMain, in_exc, out_exc, q)
     
