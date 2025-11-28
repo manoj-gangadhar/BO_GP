@@ -33,11 +33,7 @@ for fig in ${figs[@]}; do
     done
     if [ $makeMovie -eq 1 ]; then
        echo "############### make $fig.avi from .png files###############"
-       ffmpeg -y -framerate 0.5 -i png/${fig}_%02d.png png/tmp.avi # overwritten, 0.5 pic/sec
-       wait
-       echo "############# rescaling#################"
-       ffmpeg -y -i png/tmp.avi -vf scale=800:600 png/$fig.avi # rescale
-       rm png/tmp.avi
+       ffmpeg -y -framerate 0.5 -i png/${fig}_%02d.png -vf "scale=800:600" -c:v mpeg4 -q:v 3 png/$fig.avi
     fi
 done
 
