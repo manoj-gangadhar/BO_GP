@@ -96,6 +96,8 @@ def get_refProfile(path2file,LESflag=False): # default DNS
         skiprows=12
     else:
         skiprows=14
+
+    print(path2file)
         
     try:
         tmp = np.loadtxt(path2file, skiprows=skiprows, unpack=True)

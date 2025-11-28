@@ -21,7 +21,8 @@ import database
 
 import pathlib
 current_dir = pathlib.Path(__file__).resolve().parent
-sys.path.append( str(current_dir) + '/..' )
+print(current_dir)
+sys.path.append( str(current_dir.parent.parent)) #+ '/..' )
 import driver_BOGP as D
 
 # font setting
@@ -32,7 +33,7 @@ import driver_BOGP as D
 # path for grid
 path2case_grid = D.PATH2OFCASE
 Uinf, delta99_in, Nx, Ny, Nz = D.U_infty, D.delta99_in, D.Nx, D.Ny, D.Nz
-wall=2
+wall=1
 
 # %% logging
 import logging
@@ -156,8 +157,8 @@ def interpolation(yc, yr, Ur, kr, epsilon_r, Ny, nu, dpdx=None, Vr=None):
     
     if wall==1:
         U_new = np.concatenate([U_tmp, np.ones(Ny-Ny_tmp)*U_tmp[-1]])
-        if Vr:
-            V_new = np.concatenate([V_tmp, np.ones(Ny-Ny_tmp)*V_tmp[-1]])
+        V_new = np.concatenate([V_tmp, np.ones(Ny-2*Ny_tmp)*V_tmp[-1], np.flipud(V_tmp)]) if Vr else None
+        dpdx_new = np.concatenate([dpdx_tmp, np.ones(Ny-2*Ny_tmp)*dpdx_tmp[-1], np.flipud(dpdx_tmp)]) if dpdx is not None else None
         k_new = np.concatenate([k_tmp, np.ones(Ny-Ny_tmp)*k_tmp[-1]])
         epsilon_new = np.concatenate([epsilon_tmp, np.ones(Ny-Ny_tmp)*epsilon_tmp[-1]])
         omega_new = epsilon_new/k_new/0.09
@@ -206,7 +207,7 @@ def interpolation(yc, yr, Ur, kr, epsilon_r, Ny, nu, dpdx=None, Vr=None):
     
     return U_new, V_new, k_new, omega_new, nut_new, dpdx_new
 
-# %% MAIN
+# %% MAIN 
 if __name__ == '__main__':
     #  grid load
     path2run = path2case_grid.rsplit("/",1)[0]
@@ -275,8 +276,11 @@ if __name__ == '__main__':
     # %% estimate y^+
     yp_w = y[1,0]*u_tau_in/nu
     if yp_w >= 1:
+        logger.info("first y[1,0] = %f, u_tau_in = %f, nu = %f" % (y[1,0], u_tau_in, nu))
+        logger.info("first y+ = %f" % yp_w)
         logger.warning("first y+ >= 1, finner mesh recommended")
     else:
+        logger.info("first y[1,0] = %f, u_tau_in = %f, nu = %f" % (y[1,0], u_tau_in, nu))
         logger.info("first y+ = %f" % yp_w)
     
     # %% interpolation

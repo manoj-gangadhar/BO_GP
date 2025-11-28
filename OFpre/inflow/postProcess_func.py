@@ -31,7 +31,7 @@ def load_grid(path2run,casename,Nx,Ny,Nz):
     ndata = Nx*Ny*Nz
     
     # cell centres
-    b = 'sed \'1,22d\' %s/%s/0/C | ' % (path2run,casename)
+    b = 'sed \'1,21d\' %s/%s/0/C | ' % (path2run,casename)
     c = 'head -%s | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./Cdata' % (ndata)
     a = b+c
     try:
@@ -50,7 +50,7 @@ def load_grid(path2run,casename,Nx,Ny,Nz):
     # Nx*Ny*Nz
     
     # points
-    b='sed \'1,20d\' %s/%s/constant/polyMesh/points | ' % (path2run,casename)
+    b='sed \'1,19d\' %s/%s/constant/polyMesh/points | ' % (path2run,casename)
     c='head -%s | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./pointsdata'\
         % (int((Nx+1)*(Ny+1)*(Nz+1)))
     a= b+c
@@ -89,7 +89,7 @@ def load_data(path2run,casename,Nx,Ny,Nz,t):
     tail = np.array(["data%d" % t ]*num)
     tmp1 = np.core.defchararray.add(datalist,tail)
     for i in range(num):
-        b = 'sed \'1,22d\' %s/%s/%d/%s | ' % (path2run,casename,t,datalist[i]) # delete 1-22 rows
+        b = 'sed \'1,21d\' %s/%s/%d/%s | ' % (path2run,casename,t,datalist[i]) # delete 1-22 rows
         c = 'head -%d > ./%s' % (ndata, tmp1[i])
         a = b+c
         try:
@@ -118,7 +118,7 @@ def load_data(path2run,casename,Nx,Ny,Nz,t):
     datalist = 'wallShearStress'
     
     tmp1 = '%sdata%d' % (datalist,t)
-    b = 'sed \'1,29d\' %s/%s/%d/%s | ' % (path2run,casename,t,datalist) # delete 1-29 rows
+    b = 'sed \'1,28d\' %s/%s/%d/%s | ' % (path2run,casename,t,datalist) # delete 1-28 rows
     c = 'head -%d | sed -e \'s/(//g\' | sed -e \'s/)//g\' > ./%s' % (Nx, tmp1)
     a = b+c
     try:
