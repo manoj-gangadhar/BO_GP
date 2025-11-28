@@ -31,3 +31,5 @@ driver.log
 OFcase/[0-9]*/
 OFcase/VTK/
 OFcase/dynamicCode/
+submit_BOGP.sh
+backup_copy.sh

@@ -204,66 +204,6 @@ def gpOpt2d_postProc(xGP, yGP, bounds, plotOpts, final=False, kernelType_=kernel
            during the optimization. The hyper-parameters of the GPR are optimized. 
        NOTE: for Now nPar should be either 2 or 4. 
     """
-    '''
-    nPar = np.shape(bounds)[0]
-    #>>> 0. Assign the ID od mutual parameters
-    parID = []
-    if nPar == 2:
-        parID.append([0, 1])
-    elif nPar == 3:
-        parID.append([0, 1])
-        parID.append([0, 2])
-        parID.append([1,2])
-        loc = [1, 3, 4]
-    elif nPar == 4:
-       parID.append([0, 1])
-       parID.append([0, 2])
-       parID.append([1, 2])
-       parID.append([0, 3])
-       parID.append([1, 3])
-       parID.append([2, 3])
-       loc = [1, 4, 5, 7, 8, 9]  #location in subplot
-    elif nPar == 6:
-       parID.append([0, 1])
-       parID.append([0, 2])
-       parID.append([1, 2])
-       parID.append([0, 3])
-       parID.append([1, 3])
-       parID.append([2, 3])
-       parID.append([3, 1])
-       parID.append([3, 2])
-       parID.append([3, 3])
-       parID.append([3, 4])
-       parID.append([4, 1])
-       parID.append([4, 2])
-       parID.append([4, 3])
-       parID.append([4, 4])
-       parID.append([4, 5])
-       loc = [1, 6, 7, 11, 12, 13, 16, 17, 18, 19, 21, 22, 23, 24, 25]  #location in subplot
-    elif nPar == 8:
-       parID.append([0, 1])
-       parID.append([0, 2])
-       parID.append([1, 2])
-       parID.append([0, 3])
-       parID.append([1, 3])
-       parID.append([2, 3])
-       parID.append([3, 1])
-       parID.append([3, 2])
-       parID.append([3, 3])
-       parID.append([3, 4])
-       parID.append([4, 1])
-       parID.append([4, 2])
-       parID.append([4, 3])
-       parID.append([4, 4])
-       parID.append([4, 5])
-       loc = [1, 6, 7, 11, 12, 13, 16, 17, 18, 19, 21, 22, 23, 24, 25]  #location in subplot
-    else:
-        logger.error("nPar should be 2, 3 or 4: given %d" % nPar)
-    
-    fig = plt.figure()
-    #fig = plt.figure(figsize=(20, 20))
-    '''
-
     nPar = np.shape(bounds)[0]
 
     # >>> 0. Assign IDs of parameter pairs and subplot locations
@@ -274,7 +214,6 @@ def gpOpt2d_postProc(xGP, yGP, bounds, plotOpts, final=False, kernelType_=kernel
         logger.error("nPar should be >= 2: given %d" % nPar)
     else:
         if nPar == 2:
-            # trivial case: single pair, single subplot
             parID.append([0, 1])
             # no loc needed; handled in subplot logic
         else:
@@ -338,23 +277,6 @@ def gpOpt2d_postProc(xGP, yGP, bounds, plotOpts, final=False, kernelType_=kernel
 
         #>>> 4. Plot response surface predicted by GPR at test mesh
         #plot the GPR      
-        """
-        if nPar == 2:
-            ax = fig.add_subplot(1, 1, 1)
-            # figSize=500
-        elif nPar == 3:
-            ax = fig.add_subplot(2, 2, loc[i])
-            # figSize=1500
-        elif nPar == 4:
-            ax = fig.add_subplot(3, 3, loc[i])
-            # figSize=1500
-        elif nPar == 6:
-            ax = fig.add_subplot(5, 5, loc[i])
-            # figSize=1500
-        elif nPar == 8:
-            ax = fig.add_subplot(5, 5, loc[i])
-            # figSize=1500
-        """
             
         if nPar == 2:
             ax = fig.add_subplot(1, 1, 1)

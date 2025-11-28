@@ -46,6 +46,7 @@ Questions can be forwarded to `salehr@mech.kth.se` (current: `saleh.rezaeiravesh
    - `make_movie.sh`: make movie in `png/` from pdf files.
  - `data/`: Created when running the BO-GP.
  - `storage/`: Created when running the BO-GP.
+ - `requirements.txt`: Required library list to recreate python environment.
 
 ### Settings & inputs (to run the example):
  - In `driver_BOGP_example.py`: U_infty, delta99_in, Nx, Ny, Nz, t, loop params, path, beta_t etc.
@@ -57,7 +58,7 @@ Questions can be forwarded to `salehr@mech.kth.se` (current: `saleh.rezaeiravesh
 3. [`matplotlib`](https://matplotlib.org/)
 4. [`GPy`](https://github.com/SheffieldML/GPy)
 5. [`GpyOpt`](https://github.com/SheffieldML/GPyOpt)
-6. [`OpenFOAM`](https://openfoam.org/) v.7 (or v.6)
+6. [`OpenFOAM`](https://openfoam.org/) v.10 (or above)
 7. `bl_data/` in `OFpre/inflow/` (DNS data from [here](https://www.mech.kth.se/~pschlatt/DATA/))
 
 ## How to test the example for different settings:
