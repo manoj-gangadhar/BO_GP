@@ -1,4 +1,3 @@
 #!/bin/bash
-
-mpirun -np $1 simpleFoam -parallel > log &
+srun simpleFoam -parallel > log &
 wait $!

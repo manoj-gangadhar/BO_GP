@@ -38,10 +38,15 @@ boundaryField
         type            zeroGradient;
     }
     
-    Wall
+    bottomWall
     {
         type            omegaWallFunction;
         value           uniform 1.e13;
+    }
+
+    topWall
+    {
+        type            zeroGradient;
     }
     
     frontAndBack

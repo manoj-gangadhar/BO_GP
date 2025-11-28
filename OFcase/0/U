@@ -41,9 +41,14 @@ boundaryField
         type            zeroGradient;
     }
 
-    Wall
+    bottomWall
     {
         type            noSlip;
+    }
+    
+    topWall
+    {
+        type            slip;
     }
 
     frontAndBack

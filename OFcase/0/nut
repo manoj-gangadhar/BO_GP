@@ -36,13 +36,17 @@ boundaryField
     outlet
     {
         type            zeroGradient;
-        value           $internalField;
     }
     
-    Wall
+    bottomWall
     {
         type            nutLowReWallFunction; //equiv. to fixedValue, uniform0
         value           uniform 0;
+    }
+
+    topWall
+    {
+        type            zeroGradient;
     }
 
     frontAndBack

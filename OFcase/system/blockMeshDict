@@ -76,22 +76,62 @@ blocks
 
 edges
 (
- spline 4 5 (
+ spline 0 1 (
 	     // ($Lx9 $theta9 0)
 	     // ($Lx8 $theta8 0)
 	     // ($Lx7 $theta7 0)
-	     // ($Lx6 $theta6 0)
-	     // ($Lx5 $theta5 0)
+	     // ($Lx6 0.4 0)
+	     (25 0.5 0)
+	     // ($Lx4 0.6 0)
+	     // ($Lx3 0.45 0)
+	     // ($Lx2 $theta2 0)
+	     )
+ spline 6 7 (
+	     // ($Lx9 $theta9 1)
+	     // ($Lx8 $theta8 1)
+	     // ($Lx7 $theta7 1)
+	     // ($Lx6 0.45 1)
+	     (25 0.5 1)
+	     // ($Lx4 0.6 1)
+	     // ($Lx3 0.45 1)
+	     // ($Lx2 $theta2 1)
+	     )
+ spline 2 3 (
+	     // ($Lx9 $theta9 0)
+	     // ($Lx8 $theta8 0)
+	     // ($Lx7 $theta7 0)
+	     // ($Lx6 0.4 0)
+	     (25 #calc "0.5 + $LyHalf" 0)
+	     // ($Lx4 0.6 0)
+	     // ($Lx3 0.45 0)
+	     // ($Lx2 $theta2 0)
+	     )
+ spline 8 9 (
+	     // ($Lx9 $theta9 0)
+	     // ($Lx8 $theta8 0)
+	     // ($Lx7 $theta7 0)
+	     // ($Lx6 0.4 0)
+	     (25 #calc "0.5 + $LyHalf" 1)
+	     // ($Lx4 0.6 0)
+	     // ($Lx3 0.45 0)
+	     // ($Lx2 $theta2 0)
+	     )
+ spline 4 5 (
+	     // ($Lx9 $theta9 0)
+	     ($Lx8 $theta8 0)
+	     ($Lx7 $theta7 0)
+	     ($Lx6 $theta6 0)
+	     ($Lx5 $theta5 0)
 	     ($Lx4 $theta4 0)
 	     ($Lx3 $theta3 0)
 	     ($Lx2 $theta2 0)
 	     )
  spline 10 11 (
 	       // ($Lx9 $theta9 1)
-	       // ($Lx8 $theta8 1)
-	       // ($Lx7 $theta7 1)
-	       // ($Lx6 $theta6 1)
-	       // ($Lx5 $theta5 1)
+	       ($Lx8 $theta8 1)
+	       ($Lx7 $theta7 1)
+	       ($Lx6 $theta6 1)
+	       ($Lx5 $theta5 1)
 	       ($Lx4 $theta4 1)
 	       ($Lx3 $theta3 1)
 	       ($Lx2 $theta2 1)
@@ -100,11 +140,18 @@ edges
 
 boundary
 (
-    Wall
+    bottomWall
     {
         type            wall;
         faces           (
 			 (0 1 7 6)
+			 );
+    }
+
+    topWall
+    {
+        type            wall;
+        faces           (
 			 (4 10 11 5)
 			 );
     }
@@ -122,7 +169,7 @@ boundary
     
     outlet
     {
-        type            outlet;
+        type            patch;
         faces           (
 			 (1 3 9 7)
 			 (3 5 11 9)
@@ -131,14 +178,14 @@ boundary
 
     inlet_low
     {
-        type            inlet;
+        type            patch;
         faces           (
 			 (0 6 8 2)
 			 );
     }
     inlet_up
     {
-        type            inlet;
+        type            patch;
         faces           (
 			 (2 8 10 4)
 			 );

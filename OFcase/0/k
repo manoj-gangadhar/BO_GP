@@ -38,10 +38,15 @@ boundaryField
         type            zeroGradient;
     }
     
-    Wall
+    bottomWall
     {
-        type            fixedValue;
+        type            kqRWallFunction;
         value           uniform 1.e-15;
+    }
+
+    topWall
+    {
+        type            zeroGradient;
     }
     
     frontAndBack
